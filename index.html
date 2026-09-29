@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>경주 사찰 순례길</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+body{margin:0}
+
+/* Layout: phone-app column (max 480px), one screen per tab, bottom tab bar. Celadon ink on cool paper, seal-red only for stamps. */
+:root{
+  --paper:#F1F3EE; --surface:#FFFFFF; --ink:#1C2421; --muted:#5B6862; --line:#D8DDD4;
+  --celadon:#1F6B61; --celadon-soft:#DDEBE7; --seal:#B23F2A; --seal-soft:#F4E0DA;
+  --easy:#2C7A4B; --mid:#9A6A0C; --hard:#B23F2A;
+  --map-bg:#E6EAE2; --map-grid:#CCD3C7; --map-route:#1F6B61;
+  --f-display:"Gowun Batang","Nanum Myeongjo",serif;
+  --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#111614; --surface:#1A201E; --ink:#E5EAE6; --muted:#99A59F; --line:#2B3430;
+  --celadon:#62B5A7; --celadon-soft:#1C3430; --seal:#E27560; --seal-soft:#3A2420;
+  --easy:#6CC08B; --mid:#DDAE4E; --hard:#E27560;
+  --map-bg:#17201C; --map-grid:#25302B; --map-route:#62B5A7; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --paper:#111614; --surface:#1A201E; --ink:#E5EAE6; --muted:#99A59F; --line:#2B3430;
+  --celadon:#62B5A7; --celadon-soft:#1C3430; --seal:#E27560; --seal-soft:#3A2420;
+  --easy:#6CC08B; --mid:#DDAE4E; --hard:#E27560;
+  --map-bg:#17201C; --map-grid:#25302B; --map-route:#62B5A7; color-scheme:dark;}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6}
+.app{max-width:480px;margin:0 auto;padding-inline:16px;padding-block:20px 96px;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;margin:0;text-wrap:balance;line-height:1.3}
+h1{font-size:1.6rem}
+h2{font-size:1.25rem}
+h3{font-size:1.05rem}
+p{margin:0}
+.eyebrow{font-size:.72rem;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.muted{color:var(--muted)}
+.small{font-size:.8rem}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:.78rem}
+a{color:var(--celadon)}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--celadon);outline-offset:2px}
+
+.head{display:flex;flex-direction:column;gap:4px}
+.sample{display:inline-block;font-size:.7rem;padding:1px 8px;border:1px solid var(--line);border-radius:999px;color:var(--muted);margin-left:6px;vertical-align:middle;font-family:var(--f-body);font-weight:500}
+
+/* map */
+.map{background:var(--map-bg);border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+.map svg{display:block;width:100%;height:auto}
+.map-foot{display:flex;justify-content:space-between;gap:8px;padding:8px 12px;border-top:1px solid var(--line);font-size:.75rem;color:var(--muted);flex-wrap:wrap}
+
+/* course list */
+.courses{display:flex;flex-direction:column;gap:10px}
+.course{display:grid;grid-template-columns:1fr auto;gap:4px 12px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;color:inherit;width:100%}
+.course[aria-pressed="true"]{border-color:var(--celadon);box-shadow:0 0 0 1px var(--celadon)}
+.course .name{font-family:var(--f-display);font-weight:700;font-size:1.05rem}
+.course .stops{grid-column:1/-1;font-size:.85rem;color:var(--muted);min-width:0}
+.course .stats{grid-column:1/-1;display:flex;gap:14px;font-size:.85rem;font-variant-numeric:tabular-nums}
+.course .stats b{font-weight:600}
+.pill{font-size:.72rem;font-weight:600;padding:2px 10px;border-radius:999px;align-self:start;white-space:nowrap;border:1px solid currentColor}
+.lv-easy{color:var(--easy)} .lv-mid{color:var(--mid)} .lv-hard{color:var(--hard)}
+.allbtn{background:none;border:none;color:var(--celadon);padding:0;font-size:.85rem;text-decoration:underline;text-underline-offset:3px;align-self:flex-start}
+
+.stoplist{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.stop{display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+.stop .n{width:26px;height:26px;border-radius:50%;background:var(--celadon);color:var(--paper);display:grid;place-items:center;font-size:.8rem;font-weight:600}
+.stop .t{min-width:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:10px;padding:9px 14px;font-weight:600;font-size:.88rem;border:1px solid var(--celadon);background:var(--celadon);color:var(--paper);text-decoration:none}
+.btn.ghost{background:transparent;color:var(--celadon)}
+.btn.seal{background:var(--seal);border-color:var(--seal);color:var(--paper)}
+.btn.block{width:100%;padding:13px}
+.note{font-size:.78rem;color:var(--muted);line-height:1.55}
+
+/* temple */
+.back{font-size:.85rem;text-decoration:none}
+.qrbanner{background:var(--celadon-soft);color:var(--celadon);border-radius:10px;padding:10px 12px;font-size:.85rem;font-weight:600}
+.thead{display:flex;flex-direction:column;gap:6px}
+.thead .han{font-family:var(--f-display);color:var(--muted);font-size:1rem;margin-left:8px;font-weight:400}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8rem;color:var(--muted)}
+.story{display:flex;flex-direction:column;gap:10px;max-width:65ch}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.stampbox{display:grid;grid-template-columns:84px 1fr;gap:14px;align-items:center}
+.seal{width:76px;height:76px;border-radius:50%;border:3px solid var(--seal);color:var(--seal);display:grid;place-items:center;font-family:var(--f-display);font-weight:700;font-size:1.2rem;letter-spacing:.05em;transform:rotate(-8deg);background:var(--seal-soft)}
+.seal.off{border-style:dashed;border-color:var(--line);color:var(--muted);background:transparent;transform:none}
+.seal.pop{animation:pop .5s ease-out}
+@keyframes pop{0%{transform:scale(1.6) rotate(-8deg);opacity:0}60%{transform:scale(.92) rotate(-8deg);opacity:1}100%{transform:scale(1) rotate(-8deg)}}
+@media (prefers-reduced-motion:reduce){.seal.pop{animation:none}}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font-size:.8rem;padding:4px 10px;border-radius:999px;background:var(--celadon-soft);color:var(--celadon);text-decoration:none;border:none}
+.hybrid{border-style:dashed}
+
+/* stamps */
+.stampgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:14px 8px}
+.slot{display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;color:inherit;font-size:.8rem}
+.progress{height:6px;background:var(--line);border-radius:999px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--seal)}
+.coupons{display:flex;flex-direction:column;gap:10px}
+.coupon{display:grid;grid-template-columns:1fr auto;gap:4px 10px;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--surface)}
+.coupon.on{border-color:var(--seal);border-style:dashed;border-width:2px}
+.coupon .code{grid-column:1/-1;font-family:var(--f-mono);font-size:1rem;letter-spacing:.12em;color:var(--seal)}
+.coupon .need{font-size:.75rem;color:var(--muted);white-space:nowrap}
+.coupon.on .need{color:var(--seal);font-weight:600}
+.linkbtn{background:none;border:none;color:var(--muted);text-decoration:underline;font-size:.8rem;padding:0;align-self:flex-start}
+
+/* qr */
+.field{display:flex;flex-direction:column;gap:6px}
+.field input{font:inherit;font-family:var(--f-mono);font-size:.8rem;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%}
+.qrgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.qrcard{background:#FFFFFF;color:#1C2421;border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;border:1px solid var(--line);min-width:0}
+.qrcard .q{width:116px;height:116px}
+.qrcard .q img,.qrcard .q canvas{width:116px!important;height:116px!important}
+.qrcard b{font-family:var(--f-display)}
+.qrcard .u{font-family:var(--f-mono);font-size:.62rem;color:#5B6862;word-break:break-all;text-align:center}
+
+/* tabbar */
+.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
+.tabs nav{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr)}
+.tabs a{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 0 12px;text-decoration:none;color:var(--muted);font-size:.75rem;font-weight:500}
+.tabs a svg{width:22px;height:22px}
+.tabs a[aria-current="page"]{color:var(--celadon);font-weight:600}
+</style>
+</head>
+<body>
+
+
+<div class="app" id="app"></div>
+<div class="tabs"><nav id="tabs"></nav></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+/* ============================================================
+   1) 데이터 — 팀에서 코스가 확정되면 여기만 바꾸면 됩니다.
+   좌표: 카카오맵/네이버지도에서 장소 우클릭 → 좌표 복사
+   ============================================================ */
+const TEMPLES = {
+  hwangnyongsa:{name:"황룡사지",han:"皇龍寺址",seal:"皇龍",lat:35.8354,lng:129.2342,era:"553년 착공",label:"s",
+    short:"신라에서 가장 큰 절이 서 있던 자리",
+    story:["진흥왕 때인 553년 궁궐을 지으려던 자리에 황룡이 나타나 절로 바꿔 지었다고 전해집니다.",
+           "선덕여왕 때 올린 9층 목탑은 높이가 약 80m였다고 합니다. 1238년 몽골 침입 때 불에 타 지금은 넓은 터와 주춧돌만 남아 있습니다."]},
+  bunhwangsa:{name:"분황사",han:"芬皇寺",seal:"芬皇",lat:35.8375,lng:129.2337,era:"634년 창건",label:"n",
+    short:"돌을 벽돌처럼 깎아 쌓은 탑이 있는 절",
+    story:["선덕여왕 3년(634)에 세운 절로, 원효대사가 머물며 많은 책을 쓴 곳입니다.",
+           "국보 모전석탑은 돌을 벽돌 모양으로 하나하나 다듬어 쌓았습니다. 신라 석탑 가운데 가장 오래된 것으로 꼽힙니다."]},
+  baengnyulsa:{name:"백률사",han:"栢栗寺",seal:"栢栗",lat:35.8489,lng:129.2345,era:"신라 창건",label:"e",
+    short:"이차돈 순교 설화가 전하는 소금강산의 절",
+    story:["불교를 받아들이기 위해 순교한 이차돈의 머리가 날아가 떨어진 곳에 절을 세웠다는 이야기가 전합니다.",
+           "이 절에 있던 금동약사여래입상(국보)은 지금 국립경주박물관에서 볼 수 있습니다."]},
+  bulguksa:{name:"불국사",han:"佛國寺",seal:"佛國",lat:35.7900,lng:129.3322,era:"751년 중창",label:"w",
+    short:"다보탑과 석가탑이 마주 선 절",
+    story:["경덕왕 때 재상 김대성이 751년부터 크게 다시 지었습니다. 부처의 나라를 땅 위에 옮겨 놓겠다는 뜻이 담겨 있습니다.",
+           "청운교·백운교, 다보탑과 석가탑이 유명하며 1995년 석굴암과 함께 유네스코 세계유산이 되었습니다."]},
+  seokguram:{name:"석굴암",han:"石窟庵",seal:"石窟",lat:35.7950,lng:129.3492,era:"8세기 조성",label:"n",
+    short:"화강암을 쌓아 만든 인공 석굴",
+    story:["김대성이 전생의 부모를 위해 지었다는 설화가 전합니다.",
+           "자연 동굴이 아니라 화강암 조각을 쌓아 만든 석굴이며, 가운데 본존불은 동해를 바라보고 앉아 있습니다."]},
+};
+
+// path: 사찰 id 또는 [위도, 경도] 경유점(안전한 인도·탐방로를 따라 찍기)
+const COURSES = [
+  {id:"wanggyeong",name:"왕경 평지길",path:["hwangnyongsa","bunhwangsa"],mountain:false,note:"평지 · 보도 · 유모차 가능"},
+  {id:"sogeumgang",name:"소금강산길",path:["bunhwangsa","baengnyulsa"],mountain:true,note:"마지막 구간 계단 오르막"},
+  {id:"tohamsan",name:"토함산 옛길",path:["bulguksa","seokguram"],mountain:true,note:"등산로 · 일몰 전 하산 권장"},
+];
+
+const COUPONS = [
+  {need:2,where:"경주 중앙시장 제휴 상점",what:"10% 할인"},
+  {need:3,where:"황리단길 제휴 찻집",what:"전통차 1잔"},
+  {need:5,where:"불국사 입구 향토음식점",what:"완주 기념 음료 서비스"},
+];
+
+/* ============================================================
+   2) 계산 — 위도·경도로 거리, 거리+산길로 난이도
+   ============================================================ */
+const DETOUR = 1.3; // 직선거리 → 실제 걷는 거리 보정(보행 우회계수)
+function pt(p){ return typeof p==="string" ? [TEMPLES[p].lat,TEMPLES[p].lng] : p; }
+function haversine(a,b){
+  const R=6371, r=x=>x*Math.PI/180;
+  const dLat=r(b[0]-a[0]), dLng=r(b[1]-a[1]);
+  const h=Math.sin(dLat/2)**2+Math.cos(r(a[0]))*Math.cos(r(b[0]))*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+function courseInfo(c){
+  let km=0; for(let i=1;i<c.path.length;i++) km+=haversine(pt(c.path[i-1]),pt(c.path[i]));
+  km*=DETOUR;
+  const score=km+(c.mountain?2:0);
+  const level=score<1.5?["쉬움","easy"]:score<4?["보통","mid"]:["어려움","hard"];
+  const min=Math.round(km/(c.mountain?2:4)*60);
+  return {km,level,min,stops:c.path.filter(p=>typeof p==="string")};
+}
+
+/* ============================================================
+   3) 상태 — 스탬프는 이 기기 브라우저에만 저장
+   ============================================================ */
+const KEY="sachal-stamps-v1";
+let memStamps={};
+function loadStamps(){ try{ return JSON.parse(localStorage.getItem(KEY))||memStamps; }catch(e){ return memStamps; } }
+function saveStamps(s){ memStamps=s; try{ localStorage.setItem(KEY,JSON.stringify(s)); }catch(e){} }
+const state={course:null,viaQR:{},justStamped:null,firstLoad:true};
+
+/* ============================================================
+   4) 지도 — 위경도를 화면 좌표로 투영(지도 API 없이 동작)
+   ============================================================ */
+function drawMap(course){
+  const ids = course ? courseInfo(course).stops : Object.keys(TEMPLES);
+  const pts = course ? course.path.map(pt) : ids.map(pt);
+  let lat0=Math.min(...pts.map(p=>p[0])), lat1=Math.max(...pts.map(p=>p[0]));
+  let lng0=Math.min(...pts.map(p=>p[1])), lng1=Math.max(...pts.map(p=>p[1]));
+  const k=Math.cos((lat0+lat1)/2*Math.PI/180);
+  // 최소 크기 + 여백
+  let w=(lng1-lng0)*k, h=lat1-lat0; const minSpan=course?0.004:0.02;
+  if(w<minSpan){const d=(minSpan-w)/k/2;lng0-=d;lng1+=d;w=minSpan}
+  if(h<minSpan*0.6){const d=(minSpan*0.6-h)/2;lat0-=d;lat1+=d;h=minSpan*0.6}
+  const padX=w*0.22, padY=h*0.3;
+  lng0-=padX/k; lng1+=padX/k; lat0-=padY; lat1+=padY;
+  w=(lng1-lng0)*k; h=lat1-lat0;
+  const W=600, H=Math.max(380,Math.min(560,Math.round(W*h/w)));
+  // 가로세로 비율 맞추기
+  const sx=W/w, sy=H/h, s=Math.min(sx,sy);
+  const ox=(W-w*s)/2, oy=(H-h*s)/2;
+  const X=lng=>ox+(lng-lng0)*k*s, Y=lat=>oy+(lat1-lat)*s;
+
+  // 격자(위도·경도선)
+  let grid="";
+  const vLng0=lng0-(ox/s)/k, vLng1=lng1+(ox/s)/k, vLat0=lat0-oy/s, vLat1=lat1+oy/s;
+  const pick=span=>[0.002,0.005,0.01,0.02,0.05].find(st=>span/st<=4)||0.1;
+  const stepX=pick(vLng1-vLng0), stepY=pick(vLat1-vLat0);
+  for(let g=Math.ceil(vLng0/stepX)*stepX; g<=vLng1; g+=stepX){
+    const x=X(g).toFixed(1); if(+x>W-80) continue;
+    grid+=`<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="var(--map-grid)" stroke-width="1.5"/>`+
+          `<text x="${+x+5}" y="${H-10}" font-size="14" fill="var(--muted)" font-family="IBM Plex Mono,monospace">${g.toFixed(3)}°E</text>`;
+  }
+  for(let g=Math.ceil(vLat0/stepY)*stepY; g<=vLat1; g+=stepY){
+    const y=Y(g).toFixed(1);
+    grid+=`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="var(--map-grid)" stroke-width="1.5"/>`+
+          `<text x="8" y="${+y-6}" font-size="14" fill="var(--muted)" font-family="IBM Plex Mono,monospace">${g.toFixed(3)}°N</text>`;
+  }
+
+  // 코스 선
+  let routes="";
+  const draw = course ? [course] : COURSES;
+  draw.forEach(c=>{
+    const d=c.path.map(pt).map((p,i)=>`${i?"L":"M"}${X(p[1]).toFixed(1)},${Y(p[0]).toFixed(1)}`).join(" ");
+    routes+=`<path d="${d}" fill="none" stroke="var(--map-route)" stroke-width="${course?6:4}" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="${c.mountain?"1 10":"none"}" opacity="${course?1:.55}"/>`;
+  });
+
+  // 사찰 핀
+  let pins="";
+  const order = course ? courseInfo(course).stops : [];
+  Object.entries(TEMPLES).forEach(([id,t])=>{
+    const x=X(t.lng), y=Y(t.lat);
+    if(x<-20||x>W+20||y<-20||y>H+20) return;
+    const inCourse=!course||order.includes(id);
+    const n=order.indexOf(id);
+    const pos=course?"n":t.label;
+    const off={n:[0,-24,"middle"],s:[0,38,"middle"],e:[20,7,"start"],w:[-20,7,"end"]}[pos];
+    pins+=`<a href="#${id}" aria-label="${t.name}"><g opacity="${inCourse?1:.35}">
+      <circle cx="${x}" cy="${y}" r="${course?15:10}" fill="var(--surface)" stroke="var(--celadon)" stroke-width="4"/>
+      ${n>=0?`<text x="${x}" y="${y+6}" text-anchor="middle" font-size="16" font-weight="700" fill="var(--celadon)" font-family="IBM Plex Sans KR,sans-serif">${n+1}</text>`:""}
+      <text x="${x+off[0]}" y="${y+off[1]}" text-anchor="${off[2]}" font-size="${course?22:19}" font-weight="700" fill="var(--ink)" stroke="var(--map-bg)" stroke-width="5" paint-order="stroke" font-family="Gowun Batang,serif">${t.name}</text>
+    </g></a>`;
+  });
+
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="경주 사찰 위치 지도">
+    <rect width="${W}" height="${H}" fill="var(--map-bg)"/>${grid}${routes}${pins}</svg>`;
+}
+
+/* ============================================================
+   5) 화면
+   ============================================================ */
+const $app=document.getElementById("app");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const kakao=t=>`https://map.kakao.com/link/to/${encodeURIComponent(t.name)},${t.lat},${t.lng}`;
+
+function viewCourse(){
+  const c=COURSES.find(x=>x.id===state.course)||null;
+  const cards=COURSES.map(co=>{
+    const i=courseInfo(co);
+    return `<button class="course" data-course="${co.id}" aria-pressed="${state.course===co.id}">
+      <span class="name">${co.name}</span>
+      <span class="pill lv-${i.level[1]}">${i.level[0]}</span>
+      <span class="stats"><span><b>${i.km.toFixed(1)}</b> km</span><span>약 <b>${i.min}</b>분</span><span class="muted">${co.mountain?"산길 포함":"평지"}</span></span>
+      <span class="stops">${i.stops.map(s=>TEMPLES[s].name).join(" → ")} · ${co.note}</span>
+    </button>`;}).join("");
+  let detail="";
+  if(c){
+    const i=courseInfo(c);
+    detail=`<section class="card">
+      <h3>${c.name} 순서</h3>
+      <div class="stoplist">${i.stops.map((s,n)=>{const t=TEMPLES[s];const done=loadStamps()[s];
+        return `<div class="stop"><span class="n">${n+1}</span>
+          <div class="t"><b>${t.name}</b> <span class="muted small">${done?"· 스탬프 완료":""}</span><div class="mono muted">${t.lat.toFixed(4)}°N ${t.lng.toFixed(4)}°E</div></div>
+          <a class="btn ghost" href="#${s}">소개</a></div>`;}).join("")}</div>
+      <a class="btn block" href="${kakao(TEMPLES[i.stops[0]])}" target="_blank" rel="noopener">출발지까지 카카오맵 길찾기 ↗</a>
+    </section>`;
+  }
+  return `<header class="head"><span class="eyebrow">경주 · 사찰을 잇는 걷기 코스</span>
+      <h1>경주 사찰 순례길<span class="sample">예시 데이터</span></h1></header>
+    <div class="map">${drawMap(c)}
+      <div class="map-foot"><span>━ 평지 &nbsp;┅ 산길</span><span>핀을 누르면 사찰 소개</span></div></div>
+    <section class="courses">
+      ${c?`<button class="allbtn" data-course="">전체 사찰 보기</button>`:""}
+      ${cards}
+    </section>
+    ${detail}
+    <p class="note">거리 = 좌표 간 직선거리 × ${DETOUR}(보행 우회계수). 난이도 = 거리(km) + 산길 가산 2점 → 1.5 미만 쉬움, 4 미만 보통, 그 이상 어려움. 시간은 평지 시속 4km, 산길 시속 2km 기준.</p>`;
+}
+
+function viewTemple(id){
+  const t=TEMPLES[id], st=loadStamps(), done=st[id], qr=state.viaQR[id];
+  const inCourses=COURSES.filter(c=>c.path.includes(id));
+  const pop=state.justStamped===id?" pop":""; state.justStamped=null;
+  return `<a class="back" href="#course">← 코스 지도</a>
+    ${qr&&!done?`<div class="qrbanner">QR 스캔으로 ${t.name}에 도착했어요</div>`:""}
+    <header class="thead"><span class="eyebrow">${esc(t.era)}</span>
+      <h1>${t.name}<span class="han">${t.han}</span></h1>
+      <p class="muted">${t.short}</p>
+      <div class="meta"><span class="mono">${t.lat.toFixed(4)}°N ${t.lng.toFixed(4)}°E</span></div></header>
+    <section class="story">${t.story.map(p=>`<p>${p}</p>`).join("")}</section>
+    <section class="card"><div class="stampbox">
+      <div class="seal ${done?"":"off"}${pop}">${done?t.seal:"도장"}</div>
+      <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+        ${done?`<b>순례 스탬프를 받았어요</b><span class="small muted">${done}</span>`
+          : qr?`<b>도착 인증을 해주세요</b><button class="btn seal" data-stamp="${id}">스탬프 찍기</button>`
+          :`<b>현장 QR을 찍으면 스탬프가 열려요</b><button class="btn ghost" data-sim="${id}">QR 스캔 체험하기</button>`}
+      </div></div></section>
+    <div class="row">${inCourses.map(c=>`<button class="chip" data-go-course="${c.id}">${c.name} 보기</button>`).join("")}
+      <a class="chip" href="${kakao(t)}" target="_blank" rel="noopener">카카오맵 길찾기 ↗</a></div>
+    <section class="card hybrid"><span class="eyebrow">앱 연동 (출시 후)</span>
+      <p class="small">앱을 설치하면 QR을 찍는 순간 앱이 열리고, GPS 위치까지 확인해 스탬프가 자동으로 쌓여요.</p></section>`;
+}
+
+function viewStamps(){
+  const st=loadStamps(), ids=Object.keys(TEMPLES), n=ids.filter(i=>st[i]).length;
+  return `<header class="head"><span class="eyebrow">나의 순례</span><h1>스탬프 ${n} / ${ids.length}</h1></header>
+    <div class="progress"><i style="width:${n/ids.length*100}%"></i></div>
+    <div class="stampgrid">${ids.map(i=>{const t=TEMPLES[i];return `<a class="slot" href="#${i}">
+      <div class="seal ${st[i]?"":"off"}">${st[i]?t.seal:""}</div><span>${t.name}</span></a>`;}).join("")}</div>
+    <section style="display:flex;flex-direction:column;gap:10px">
+      <h2>지역 상생 쿠폰<span class="sample">예시 제휴처</span></h2>
+      <p class="small muted">스탬프를 모으면 사찰 근처 시장·가게에서 쓸 수 있는 쿠폰이 열려요. 상점에 이 화면을 보여주세요.</p>
+      <div class="coupons">${COUPONS.map((c,i)=>{const on=n>=c.need;
+        return `<div class="coupon ${on?"on":""}"><b>${c.where}</b><span class="need">${on?"사용 가능":`스탬프 ${c.need}개 필요`}</span>
+          <span class="small">${c.what}</span>${on?`<span class="code">SC-${(i+1)}${"KRMG"[i%4]}${(n*7+i*3)%10}${"PJTW"[(n+i)%4]}</span>`:""}</div>`;}).join("")}</div>
+    </section>
+    <button class="linkbtn" data-reset>스탬프 초기화 (시연용)</button>`;
+}
+
+function viewQR(){
+  const base=(state.qrBase ?? location.href.split("#")[0]);
+  return `<header class="head"><span class="eyebrow">운영자용</span><h1>사찰 QR 만들기</h1>
+      <p class="small muted">사찰마다 QR 하나. 찍으면 그 사찰 소개 페이지가 열리고 스탬프를 받을 수 있어요. 배포한 주소를 넣으면 QR이 그 주소로 바뀝니다.</p></header>
+    <div class="field"><label class="eyebrow" for="qrbase">배포 주소</label>
+      <input id="qrbase" value="${esc(base)}" placeholder="https://팀아이디.github.io/sachal/"></div>
+    <div class="qrgrid">${Object.entries(TEMPLES).map(([id,t])=>`<div class="qrcard">
+      <b>${t.name}</b><div class="q" data-qr="${esc(base)}#${id}"></div><span class="u">${esc(base)}#${id}</span></div>`).join("")}</div>
+    <p class="note">QR 이미지를 길게 누르거나 우클릭해서 저장한 뒤 안내판 크기에 맞춰 인쇄하세요.</p>`;
+}
+
+function paintQR(){
+  if(typeof QRCode==="undefined") return;
+  document.querySelectorAll("[data-qr]").forEach(el=>{
+    el.innerHTML="";
+    new QRCode(el,{text:el.dataset.qr,width:232,height:232,colorDark:"#1C2421",colorLight:"#FFFFFF",correctLevel:QRCode.CorrectLevel.M});
+  });
+}
+
+const ICONS={
+  course:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></svg>',
+  stamps:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="10" r="6"/><path d="M5 21h14M8 17h8"/></svg>',
+  qr:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v1M14 20h1M18 18h3v3"/></svg>'};
+
+function render(){
+  const r=location.hash.slice(1)||"course";
+  if(TEMPLES[r] && state.firstLoad) state.viaQR[r]=true;   // 외부(QR)에서 바로 들어온 경우
+  state.firstLoad=false;
+  const tab=TEMPLES[r]?"course":(["course","stamps","qr"].includes(r)?r:"course");
+  $app.innerHTML = TEMPLES[r]?viewTemple(r): tab==="stamps"?viewStamps(): tab==="qr"?viewQR(): viewCourse();
+  document.getElementById("tabs").innerHTML=[["course","코스"],["stamps","스탬프"],["qr","QR 만들기"]]
+    .map(([k,l])=>`<a href="#${k}" ${tab===k?'aria-current="page"':""}>${ICONS[k]}${l}</a>`).join("");
+  if(tab==="qr") paintQR();
+}
+
+$app.addEventListener("click",e=>{
+  const b=e.target.closest("[data-course],[data-stamp],[data-sim],[data-reset],[data-go-course]");
+  if(!b) return;
+  if(b.dataset.course!==undefined){ state.course=b.dataset.course||null; render(); window.scrollTo({top:0,behavior:"smooth"}); }
+  if(b.dataset.goCourse){ state.course=b.dataset.goCourse; location.hash="course"; }
+  if(b.dataset.sim){ state.viaQR[b.dataset.sim]=true; render(); }
+  if(b.dataset.stamp){ const s=loadStamps(); const d=new Date();
+    s[b.dataset.stamp]=`${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")} 인증`;
+    saveStamps(s); state.justStamped=b.dataset.stamp; render(); }
+  if(b.dataset.reset!==undefined){ saveStamps({}); state.viaQR={}; render(); }
+});
+$app.addEventListener("input",e=>{
+  if(e.target.id!=="qrbase") return;
+  state.qrBase=e.target.value.trim();
+  clearTimeout(state.qt); state.qt=setTimeout(()=>{
+    document.querySelectorAll(".qrcard").forEach((card,i)=>{const id=Object.keys(TEMPLES)[i];
+      const url=`${state.qrBase}#${id}`; card.querySelector("[data-qr]").dataset.qr=url; card.querySelector(".u").textContent=url;});
+    paintQR();},300);
+});
+window.addEventListener("hashchange",()=>{render();window.scrollTo(0,0);});
+render();
+</script>
+
+</body>
+</html>
